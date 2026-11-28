@@ -1,0 +1,45 @@
+# Template file for 'gridcraft'
+pkgname=gridcraft
+version=0.19.1
+revision=1
+# gridcraft-sandbox's seccomp filters (seccompiler) exist for x86_64 and aarch64 only
+archs="x86_64* aarch64*"
+build_style=cargo
+make_build_args="-p gridcraft -p gridcraft-cli"
+# The UI tests (gridcraft-ui-egui, gridcraft) render snapshots through wgpu and need a GPU
+make_check_args="-p gridcraft-cli -p gridcraft-engine -p gridcraft-xlsx -p gridcraft-formula
+ -p gridcraft-functions -p gridcraft-numfmt -p gridcraft-model -p gridcraft-calc
+ -p gridcraft-core -p gridcraft-chart -p gridcraft-math"
+hostmakedepends="pkg-config"
+# Windowing (X11/Wayland, xkbcommon) and the GPU (Vulkan, EGL/GL) are loaded at run time
+depends="libX11 libXcursor libXi libxkbcommon libxkbcommon-x11 wayland
+ vulkan-loader libglvnd hicolor-icon-theme"
+short_desc="Open-source spreadsheet application built in pure Rust"
+maintainer="Filip Rojek <filip@filiprojek.cz>"
+license="MIT OR Apache-2.0"
+homepage="https://getartcraft.com/apps/gridcraft"
+changelog="https://github.com/storytold/gridcraft/releases"
+distfiles="https://github.com/storytold/gridcraft/archive/refs/tags/v${version}.tar.gz"
+checksum=4adb7b981de97f31c61e5be67ac7b2bcd84e2559647b5c8c39561bbcce199c5e
+
+do_install() {
+	local _appid=ai.storyteller.gridcraft
+
+	vbin target/${RUST_TARGET}/release/gridcraft
+	vbin target/${RUST_TARGET}/release/gridcraft-cli
+
+	vinstall packaging/linux/${_appid}.desktop 644 usr/share/applications
+	vinstall packaging/linux/${_appid}.mime.xml 644 usr/share/mime/packages ${_appid}.xml
+	sed -e "s/@VERSION@/${version}/g" \
+		-e "s/@DATE@/$(date -u -d @${SOURCE_DATE_EPOCH:-0} +%F)/g" \
+		packaging/linux/${_appid}.metainfo.xml.in > ${_appid}.metainfo.xml
+	vinstall ${_appid}.metainfo.xml 644 usr/share/metainfo
+
+	vmkdir usr/share/icons
+	vcopy assets/app-icon/hicolor usr/share/icons
+
+	vdoc README.md
+	vdoc ATTRIBUTION.md
+	vlicense LICENSE-MIT
+	vlicense NOTICE
+}
